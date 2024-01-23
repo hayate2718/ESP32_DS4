@@ -36,9 +36,9 @@ ESP32と制御ボードの通信はSPIでおこなう。<br>
 |Option|bit13|
 |None(Read = 0)|bit14|
 |None(Read = 0)|bit15|
-|L2|bit16 ~ bit23|
-|R2|bit24 ~ bit31|
-|L_Stick_X|bit32 ~ bit39|
-|L_Stick_Y|bit40 ~ bit47|
-|R_Stick_X|bit48 ~ bit55|
-|R_Stick_Y|bit56 ~ bit63|
+|L2(unsigned)|bit16 ~ bit23|
+|R2(unsigned)|bit24 ~ bit31|
+|L_Stick_X(signed)|bit32 ~ bit39|
+|L_Stick_Y(signed)|bit40 ~ bit47|
+|R_Stick_X(signed)|bit48 ~ bit55|
+|R_Stick_Y(signed)|bit56 ~ bit63|
