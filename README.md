@@ -4,7 +4,7 @@ ESP32でDualShock4をつかうプログラム
 DS4の信号をBluetoothでESP32に送る。<br>
 ESP32はDS4とメイン制御ボードとのインターフェースにする。<br>
 ESP32と制御ボードの通信はSPIでおこなう。<br>
-`#define dbug_mode`を定義するとデバッグモードでシリアルモニタでコントローラの状態を確認可能<br>
+`#define dbug_mode`を定義すると、デバッグモードになる。シリアルモニタでコントローラの状態を確認可能<br>
 
 
 |ESP32|SPI_Master|
