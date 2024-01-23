@@ -30,6 +30,8 @@
 
 //global variables declaration
 
+uint8_t txdata[8] = {0};
+
 spi_device_handle_t handle;
 
 typedef union{
@@ -56,14 +58,22 @@ typedef union{
       uint8_t bit_E : 1; //none
       uint8_t bit_F : 1; //none
   };
-	uint32_t all_data : 14;
+	uint16_t all_data : 16;
 }digital_data; //スイッチの数は14個なので14bitsで状態を表す
 
 typedef union{
-  uint8_t data[8];
-  uint64_t rawdata;
-
-}rawdata_64bits;
+  struct{
+      uint8_t bit_0 : 1;
+      uint8_t bit_1 : 1;
+      uint8_t bit_2 : 1;
+      uint8_t bit_3 : 1;
+      uint8_t bit_4 : 1;
+      uint8_t bit_5 : 1;
+      uint8_t bit_6 : 1;
+      uint8_t bit_7 : 1;
+  };
+	uint8_t all_data : 8;
+}data_8bits;
 
 //function declaration
 
@@ -116,7 +126,7 @@ void DS4_Recive_Data(void * _Data ){//64bits以上のメモリが必要
     DS4_analog_stat[5].signed_data = PS4.RStickY(); //符号あり1Byte
 
     memcpy(_Data,&DS4_switch_stat,sizeof(DS4_switch_stat));
-    memcpy(_Data+sizeof(DS4_switch_stat),&DS4_analog_stat,sizeof(DS4_analog_stat));
+    memcpy((uint8_t*)_Data+sizeof(DS4_switch_stat),&DS4_analog_stat,sizeof(DS4_analog_stat));
 
   }
 
@@ -130,6 +140,24 @@ void setup() {
   
   uint8_t ESP_bt_mac[6] = {0};
   char DS4_bt_mac[30];
+
+  esp_read_mac(ESP_bt_mac,ESP_MAC_BT);
+
+  Serial.printf("ESP_MAC_BT = %x:%x:%x:%x:%x:%x\n",
+  ESP_bt_mac[0],
+  ESP_bt_mac[1],
+  ESP_bt_mac[2],
+  ESP_bt_mac[3],
+  ESP_bt_mac[4],
+  ESP_bt_mac[5]); //esp32のマックアドレスがシリアルモニタ返される
+
+  sprintf(DS4_bt_mac,"%x:%x:%x:%x:%x:%x",
+  ESP_bt_mac[0],
+  ESP_bt_mac[1],
+  ESP_bt_mac[2],
+  ESP_bt_mac[3],
+  ESP_bt_mac[4],
+  ESP_bt_mac[5]); //esp32のマックアドレスを文字列に変換してる。
 
   PS4.begin(DS4_bt_mac);
   
@@ -163,25 +191,72 @@ void setup() {
     ret = spi_bus_add_device(SPI2_HOST, &spicfg,&handle);
     assert(ret == ESP_OK);
 
+    Serial.printf("DS4_Ready\n");
+
 }
 
 //main routine
 
 void loop() {
   // put your main code here, to run repeatedly:
-  
-    uint8_t txdata[8] = {0};
-    uint64_t *_txdata_64bits;
-    _txdata_64bits = (uint64_t *)txdata;
 
-    while(1){
+  uint8_t flag = 0;
+
+    while(PS4.isConnected()){
+
+      if(!flag){
+        Serial.printf("DS4_Start\n");
+        flag = 1;
+      }
 
       DS4_Recive_Data(txdata);
       SPI_Send_Data(txdata,sizeof(txdata));
 
-      
-      Serial.printf("raw txdata = %ld\n txdata size = %d\n",*_txdata_64bits,sizeof(txdata));
+      //#define debug_mode
+
+      #ifdef debug_mode
+
+      data_8bits switch_stat[2];
+
+      switch_stat[0].all_data=txdata[0];
+      switch_stat[1].all_data=txdata[1];
+
+      Serial.printf("txdata size = %d\n", sizeof(txdata));
+
+      Serial.printf("right=%d\n,down=%d\n,up=%d\n,left=%d\n,square=%d\n,closs=%d\n,circle=%d\n,triangle=%d\n,L1=%d\n,r1=%d\n,L3=%d\n,r3=%d\n,share=%d\n,option=%d\n,none=%d\n,none=%d\n"
+      ,switch_stat[0].bit_0
+      ,switch_stat[0].bit_1
+      ,switch_stat[0].bit_2
+      ,switch_stat[0].bit_3
+      ,switch_stat[0].bit_4
+      ,switch_stat[0].bit_5
+      ,switch_stat[0].bit_6
+      ,switch_stat[1].bit_7
+      ,switch_stat[1].bit_0
+      ,switch_stat[1].bit_1
+      ,switch_stat[1].bit_2
+      ,switch_stat[1].bit_3
+      ,switch_stat[1].bit_4
+      ,switch_stat[1].bit_5
+      ,switch_stat[1].bit_6
+      ,switch_stat[1].bit_7);
+
+      Serial.printf("L2=%d\n,R2=%d\n,Lx=%d\n,Ly=%d\n,Rx=%d\n,Ry=%d\n",
+      txdata[2],
+      txdata[3],
+      (signed char)txdata[4],
+      (signed char)txdata[5],
+      (signed char)txdata[6],
+      (signed char)txdata[7]
+      );
 
       delay(1000);
+
+      #else
+
+      delay(20);
+
+      #endif
+
     }
 }
